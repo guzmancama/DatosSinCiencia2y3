@@ -67,3 +67,11 @@ Machine Learning supervisados y no supervisados para entender la gravedad de los
 - Un registro por siniestro reportado a la Secretaría de Movilidad de Cali (≈371 mil reportes, 1-ene-2016 a 2-nov-2024).
 - El archivo viene en codificación **Latin-1**, separado por `;`, y los faltantes están marcados con `"."`.
 - Variable objetivo: `Tipo confirmado` (Negativo, Solo daños, Con lesionado, Con fallecido).
+
+## Datos limpios (salida de la Fase B)
+
+- 370.996 reportes y 34 variables numéricas sin faltantes, más `CODIGO`, `FECHA`, `GRAVEDAD` y `GRAVEDAD_NUM` (0 = Negativo,
+  1 = Solo daños, 2 = Con lesionado, 3 = Con fallecido).
+- La columna `SPLIT` trae la partición train/test (80/20, estratificada por gravedad). La imputación y el escalado se
+  ajustaron solo con las filas `train`, por eso la Fase C separa con `df[df.SPLIT == "train"]` y
+  `df[df.SPLIT == "test"]` en lugar de hacer un `train_test_split` nuevo.
