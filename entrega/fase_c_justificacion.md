@@ -17,7 +17,13 @@ El ejercicio clasifica registros históricos con información disponible en el d
 
 Se entrenaron regresión logística, árbol de decisión y Random Forest. El árbol utilizó profundidad máxima de 8; Random Forest, 200 árboles con profundidad máxima de 8. Los tres emplearon ponderación de clases mediante `class_weight="balanced"` y semilla 42. Las configuraciones se fijaron antes de evaluar.
 
-La clase Negativo representa el 66,34 % de los reportes y Con fallecido apenas el 0,91 %. Por este desbalance, se eligió F1 macro como criterio principal: combina Precision y Recall y asigna el mismo peso a cada categoría. También se reportaron Accuracy, Precision macro, Recall macro, F1 ponderado, métricas por clase y matrices de confusión.
+La regresión logística se incluyó como modelo sencillo de comparación; el árbol permite representar reglas e interacciones no lineales; y Random Forest combina árboles para comparar un ensamble con un clasificador individual. Así se contrastan tres enfoques estudiados en las preclases sobre las mismas variables y particiones.
+
+La profundidad máxima de 8 y los 200 árboles de Random Forest se tomaron como configuraciones iniciales de los ejemplos de clase. Limitar la profundidad restringe la complejidad, pero no demuestra por sí solo que se haya evitado el sobreajuste. No se realizó una búsqueda de hiperparámetros.
+
+La ponderación de clases aumenta el peso de las categorías minoritarias durante el entrenamiento; sin embargo, no garantiza mejores resultados y puede aumentar las falsas alarmas. No se evaluó una configuración equivalente sin ponderación para medir ese efecto.
+
+La clase Negativo representa el 66,34 % de los reportes y Con fallecido apenas el 0,91 %. Por este desbalance, se utilizó F1 macro como criterio principal de comparación: combina Precision y Recall y asigna el mismo peso a cada categoría. También se reportaron Accuracy, Precision macro, Recall macro, F1 ponderado, métricas por clase y matrices de confusión.
 
 Todos los clasificadores se evaluaron sobre las mismas filas de prueba.
 
@@ -47,7 +53,7 @@ Random Forest identifica 422 de los 672 reportes con fallecidos y deja 250 clasi
 
 ## 4. Justificación del modelo seleccionado
 
-Se selecciona **Random Forest entre las configuraciones evaluadas** porque presenta el mayor F1 macro, criterio principal definido para comparar el desempeño entre las cuatro clases. También obtiene el mayor Recall macro y el mayor F1 para Con lesionado.
+Se selecciona **Random Forest entre las configuraciones evaluadas** porque presenta el mayor F1 macro, criterio principal utilizado para comparar el desempeño entre las cuatro clases. También obtiene el mayor Recall macro y el mayor F1 para Con lesionado.
 
 La decisión tiene límites: su ventaja en F1 macro frente al árbol es de solo 0,0016 y no obtiene el mejor resultado específico para fallecidos. Si se priorizara la simplicidad y la interpretación de reglas, el árbol sería una alternativa razonable.
 
@@ -55,7 +61,11 @@ El modelo seleccionado sirve como resultado experimental del proyecto. Su baja p
 
 ## 5. Segmentación mediante K-Means
 
+Se utilizaron las mismas 20 variables predictoras, sin incluir la gravedad, para agrupar reportes con características similares. K-Means se eligió por ser una técnica estudiada en la preclase de aprendizaje no supervisado y permitir describir los segmentos mediante sus perfiles medios.
+
 Se compararon configuraciones de 2 a 10 grupos sobre una muestra reproducible de 10.000 reportes de entrenamiento. Silhouette se calculó sobre 2.000 de ellos. K = 6 obtuvo el mayor Silhouette, 0,4334, y el menor Davies-Bouldin, 0,6672, dentro del rango explorado.
+
+Silhouette evalúa la cohesión y separación de los grupos, por lo que se prefieren valores más altos. Davies-Bouldin compara la dispersión interna con la separación entre grupos, por lo que se prefieren valores más bajos. Ambos indicadores coincidieron en favorecer seis segmentos en esta exploración.
 
 Posteriormente, se entrenó K-Means con seis grupos sobre todo el conjunto de entrenamiento. Los reportes de prueba se asignaron a los centros aprendidos, sin reajustarlos. Sobre una muestra de 2.000 reportes de prueba se obtuvo:
 
@@ -63,6 +73,8 @@ Posteriormente, se entrenó K-Means con seis grupos sobre todo el conjunto de en
 |---|---:|
 | Silhouette | 0,4261 |
 | Davies-Bouldin | 0,6779 |
+
+Estas métricas describen la estructura del agrupamiento, no la capacidad de predecir la gravedad.
 
 Los perfiles medios permiten describir los segmentos de la siguiente manera:
 
@@ -75,9 +87,13 @@ Los perfiles medios permiten describir los segmentos de la siguiente manera:
 | 4 | Destacado en motocicletas | 50.543 | 12.660 |
 | 5 | Destacado en otros vehículos | 799 | 199 |
 
+Las descripciones se basan en medias de variables transformadas y estandarizadas, no en cantidades originales de vehículos. Los segmentos pueden contener combinaciones de distintos actores viales; sus nombres señalan características destacadas, no categorías exclusivas.
+
 El grupo 0 concentra aproximadamente el 76 % de los reportes. Los segmentos minoritarios tienen pocos representantes en la muestra utilizada para las métricas: seis reportes del grupo 1 y tres del grupo 5. Por ello, las métricas globales ofrecen información limitada sobre estos grupos.
 
 La proyección PCA de dos componentes conserva el 32,35 % de la varianza. Se utiliza para visualizar los segmentos, pero no representa toda la separación existente en las 20 variables. Los identificadores de cluster no expresan niveles de gravedad o riesgo.
+
+La segmentación permite organizar el análisis por perfiles de vehículos, pero no demuestra que un grupo tenga mayor riesgo de accidente que otro.
 
 ## 6. Limitaciones y posibles mejoras
 
@@ -86,6 +102,8 @@ Los resultados corresponden a una partición aleatoria de registros históricos 
 Aunque se excluyeron variables que podían revelar el resultado, los datos de vehículos también pueden haberse obtenido durante la confirmación del reporte. Antes de un uso operativo, debe comprobarse qué información existe realmente al momento de clasificar.
 
 La selección del modelo se basó en la comparación del conjunto de prueba solicitada en el proyecto. Como mejora, convendría seleccionar modelos y configuraciones mediante validación dentro de entrenamiento y reservar una prueba independiente para la evaluación final.
+
+No se realizó una búsqueda de hiperparámetros ni una comparación entre configuraciones con y sin ponderación de clases. Estas evaluaciones permitirían estudiar si es posible mejorar el equilibrio entre identificar casos minoritarios y reducir falsas alarmas.
 
 También se propone revisar las métricas por año, estudiar la estabilidad del agrupamiento con otras muestras y semillas, y evaluar el efecto de los patrones de información faltante. Estas comprobaciones permitirían determinar si los resultados reflejan características de los reportes o particularidades del sistema de registro.
 
